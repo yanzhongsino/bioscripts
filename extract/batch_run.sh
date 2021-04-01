@@ -1,6 +1,7 @@
 #!/bin/bash
 # 并行运行循环指令，并控制并行数量为${thread}
 # usage: 修改thread=后的值为想要设定的并行线程数，把需要并行的命令替换23行的run something。运行脚本batch_run.sh，实现并行运行循环任务。
+# ref：网上找的脚本，来源找不到了，侵删。
 
 thread=16
 
