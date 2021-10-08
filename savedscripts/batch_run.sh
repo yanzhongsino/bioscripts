@@ -27,6 +27,8 @@ do
         } &
 done
 
+## ps:可以使用while read line; do echo $line; done < file.txt代替for i in $(cat file.txt);do echo $i; done循环。但是不能用cat file.txt | while read line; do echo $line; done代替。
+
 wait
  
 stop_time=`date +%s`  #定义脚本运行的结束时间
