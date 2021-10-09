@@ -25,7 +25,7 @@ thread=8 #定义提取步骤的并行运行数量
 #### extract_sequences用于提取orthogroup的序列
 function extract_sequences(){
     a=$(echo $1)
-    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -A 1 ${sample[${i}]} ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/${sample[${i}]}.*/${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done
+    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -A 1 ${sample[${i}]} ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/${sample[${i}]}.*/${sample[0]}_${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done
     cat ./scg/${sample[0]}/*.$a > ./scg/${sample[0]}/${sample[0]}.$a.fa
     rm ./scg/${sample[0]}/*.$a
 }
@@ -34,9 +34,9 @@ function extract_sequences(){
 function merge_sequences(){
     a=$(echo $1)
     b=$(echo $2)
-    for i in $(echo ${species[*]}); do cat ./scg/OG*/OG*.${a}${b}fa |grep -A 1 ">${i}" |grep -v ">"|sed -E ":a;N;s/\n//g;ta" |sed "s/ //g"|sed "1i\>${i}" >./scgs/${i}.${b}${a}fa; done
+    for i in $(echo ${species[*]}); do grep -A 1 ">${i}" ./scg/OG*/OG*.${a}${b}fa |seqkit sort -n |grep -v ">"|sed -E ":a;N;s/\n//g;ta" |sed "1i\>${i}" |seqkit seq -w 0 -u >./scgs/${i}.${b}${a}fa; done
     cat ./scgs/*.${b}${a}fa >./scgs/scg.${a}${b}fa
-    rm ./scgs/*.${c}${b}${a}fa
+    rm ./scgs/*.${b}${a}fa
 }
 
 
