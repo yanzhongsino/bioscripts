@@ -25,7 +25,7 @@ thread=8 #定义提取步骤的并行运行数量
 #### extract_sequences用于提取orthogroup的序列
 function extract_sequences(){
     a=$(echo $1)
-    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -A 1 ${sample[${i}]} ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/${sample[${i}]}.*/${sample[0]}_${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done
+    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -A 1 ${sample[${i}]} ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/${sample[${i}]}.*/${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done
     cat ./scg/${sample[0]}/*.$a > ./scg/${sample[0]}/${sample[0]}.$a.fa
     rm ./scg/${sample[0]}/*.$a
 }
@@ -34,11 +34,12 @@ function extract_sequences(){
 function merge_sequences(){
     a=$(echo $1)
     b=$(echo $2)
-    for i in $(echo ${species[*]}); do grep -A 1 ">${i}" ./scg/OG*/OG*.${a}${b}fa |seqkit sort -n |grep -v ">"|sed -E ":a;N;s/\n//g;ta" |sed "1i\>${i}" |seqkit seq -w 0 -u >./scgs/${i}.${b}${a}fa; done
+    for i in $(echo ${species[*]}); do cat ./scg/OG*/OG*.${a}${b}fa | grep -A 1 "${i}"  |seqkit sort -n |grep -v ">"|sed -E ":a;N;s/\n//g;ta" |sed "1i\>${i}" |seqkit seq -w 0 -u >./scgs/${i}.${b}${a}fa; done
     cat ./scgs/*.${b}${a}fa >./scgs/scg.${a}${b}fa
-    rm ./scgs/*.${b}${a}fa
+    rm ./scgs/*.${b}${a}fas
 }
 
+# merge_sequences函数与seqkit concat命令达到的效果一致;seqkit concat更可靠。
 
 
 ## 00-3 为循环准备
@@ -114,17 +115,29 @@ echo "extract step end"
 echo "start merge step"
 
 ### 合并比对的cds和pep序列
-merge_sequences mafft. cds.
-merge_sequences mafft. pep.
-merge_sequences prank. cds.
-merge_sequences prank. pep.
+#merge_sequences mafft. cds.
+#merge_sequences mafft. pep.
+#merge_sequences prank. cds.
+#merge_sequences prank. pep.
+
+seqkit concat ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.mafft.cds.fa
+seqkit concat ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.mafft.pep.fa
+seqkit concat ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.prank.cds.fa
+seqkit concat ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.prank.pep.fa
 
 #### 合并根据pep比对结果转换的CDS比对序列
-merge_sequences mafft. p2c.
-merge_sequences prank. p2c.
-merge_sequences mafft. p2c_trim.
-merge_sequences prank. p2c_trim.
+#merge_sequences mafft. p2c.
+#merge_sequences prank. p2c.
+#merge_sequences mafft. p2c_trim.
+#merge_sequences prank. p2c_trim.
 
+seqkit concat ./scg/OG*/OG*.mafft.p2c.fa > ./scgs/scg.mafft.p2c.fa
+seqkit concat ./scg/OG*/OG*.prank.p2c.fa > ./scgs/scg.prank.p2c.fa
+seqkit concat ./scg/OG*/OG*.mafft.p2c_trim.fa > ./scgs/scg.mafft.p2c_trim.fa
+seqkit concat ./scg/OG*/OG*.prank.p2c_trim.fa > ./scgs/scg.prank.p2c_trim.fa
+
+#### notes:用我自己的数据运行，mafft结果正常，prank结果在merge_sequences这步合并之后序列长度不是一致的，没搞清楚什么原因，还是建议使用seqkit concat做合并吧。
+#### 唉，刚为自己学会写函数开心没到半天，就发现自己造轮子bug真是多，还是要多查一下已有的工具。
 
 echo "-------------------------** all done**--------------------"
 echo "merge step end"
