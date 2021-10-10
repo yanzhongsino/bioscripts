@@ -11,14 +11,20 @@
 # extract_single_copy_genes.sh脚本用于做完orthofinder的分析得到单拷贝直系同源基因之后提取各个物种的单拷贝直系同源基因。
 
 ## 00-1 数据准备
-### 1. 单拷贝直系同源基因的信息保存在scg.ortho文件中，内容是singlecopyorthologues列表，第一列orthogroupID，后面所有列每个物种的基因序列ID，共12列，这个文件的每行数据为一个homologs单拷贝基因对应的每套数据的基因序列ID。
+### 1. 单拷贝直系同源基因的信息保存在scg.ortho文件中，内容是singlecopyorthologues列表，第一列orthogroupID，后面所有列每个物种的基因序列ID，共12列，这个文件的每行数据为一个homologs单拷贝基因对应的每套数据的基因序列ID。可以通过orthofinder的结果Orthogroups_SingleCopyOrthologues.txt和Orthogroups.txt提取得来。`grep -f Orthogroups_SingleCopyOrthologues.txt Orthogroups.txt|sed -e "s/: / /g" -e "s/ /\t/g" >scg.ortho`
 ### 3. 所有物种的cds序列和pep序列保存在cds和pep目录下，并以物种名+cds.fa/pep.fa命名文件,序列都为一行的格式，否则应该用`seqkit seq -w 0 cds.fa > new.cds.fa`预先处理。
 
-data_path=/path/to/data #cds和pep目录存放的目录
+data_path=/path/to/data #cds和pep目录存放的路径
 ortho=/path/to/scg.ortho #scg.ortho文件的绝对路径
-species=(A B C D E F G) #物种名保存在species的list中，用于后面调用。物种顺序与scg.ortho文件中物种顺序一致。
-desc=(AT BB C_34 d343_LL ecs F gfffe) #cds和pep序列id前缀，与species顺序一致。
+species=(A B C D E F G) #定义保存物种名的数组species，用于后面调用。物种顺序与scg.ortho文件中物种顺序一致。
+desc=(AT BB C_34 d343_LL ecs F gfffe) #定义序列特征数组desc，cds和pep序列id前缀，与species顺序一致。也可用命令`desc=($(tail -n 1 ${ortho}|cut -f 2-|sed -e "s/[0-9.][^\t]+//g"))`获取。
 thread=8 #定义提取步骤的并行运行数量
+
+###### 一定要检查两个数组有没有定义正确。
+echo "species数组：${species[*]}"
+echo "desc数组：${desc[*]}"
+
+###### 如果species.txt文件的第一行按顺序保存了物种名，可以用命令`species=($(head -n 1 species.txt|cut -f 2-))`获取species数组
 
 ## 00-2 函数定义
 
