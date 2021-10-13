@@ -128,8 +128,8 @@ echo "start merge step"
 
 seqkit concat ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.mafft.cds.fa
 seqkit concat ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.mafft.pep.fa
-seqkit concat ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.prank.cds.fa
-seqkit concat ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.prank.pep.fa
+seqkit concat ./scg/OG*/OG*.prank.cds.fa > ./scgs/scg.prank.cds.fa
+seqkit concat ./scg/OG*/OG*.prank.pep.fa > ./scgs/scg.prank.pep.fa
 
 #### 合并根据pep比对结果转换的CDS比对序列
 #merge_sequences mafft. p2c.
