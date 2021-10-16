@@ -16,13 +16,13 @@
 
 data_path=/path/to/data #cds和pep目录存放的路径
 ortho=/path/to/scg.ortho #scg.ortho文件的绝对路径
-species=(A B C D E F G) #定义保存物种名的数组species，用于后面调用。物种顺序与scg.ortho文件中物种顺序一致。
-desc=(AT BB C_34 d343_LL ecs F gfffe) #定义序列特征数组desc，cds和pep序列id前缀，与species顺序一致。也可用命令`desc=($(tail -n 1 ${ortho}|cut -f 2-|sed -e "s/[0-9.][^\t]+//g"))`获取。
+species=($(tail -n 1 ${ortho}|cut -f 2-|sed -e "s/[0-9_.][^\t]*//g" -e "s/\t// g")) #定义保存物种名的数组species，格式：(A B C D E F G)，用于后面调用。物种顺序与scg.ortho文件中物种顺序一致。默认用命令`species=($(tail -n 1 ${ortho}|cut -f 2-|sed -e "s/[0-9_.][^\t]*//g" -e "s/\t// g"))`获取。
+# desc=(AT BB C_34 d343_LL ecs F gfffe) #定义序列特征数组desc，cds和pep序列id前缀，与species顺序一致。也可用命令`desc=($(tail -n 1 ${ortho}|cut -f 2-|sed -e "s/[0-9_.][^\t]*//g" -e "s/\t// g"))`获取。【不需要desc数组了】
 thread=8 #定义提取步骤的并行运行数量
 
 ###### 一定要检查两个数组有没有定义正确。
 echo "species数组：${species[*]}"
-echo "desc数组：${desc[*]}"
+#echo "desc数组：${desc[*]}"
 
 ###### 如果species.txt文件的第一行按顺序保存了物种名，可以用命令`species=($(head -n 1 species.txt|cut -f 2-))`获取species数组
 
@@ -31,7 +31,7 @@ echo "desc数组：${desc[*]}"
 #### extract_sequences用于提取orthogroup的序列
 function extract_sequences(){
     a=$(echo $1)
-    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -A 1 ${sample[${i}]} ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/${sample[${i}]}.*/${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done
+    for i in $(seq 1 ${#species[@]});do j=`expr ${i} - 1`; grep -E -A 1 "${sample[${i}]}$|${sample[${i}]}[^0-9]" ${data_path}/$a/${species[${j}]}.$a.fa |sed "s/.*${sample[${i}]}.*/>${species[${j}]}/" >./scg/${sample[0]}/${species[${j}]}.$a; done # grep -E -A 1 "${sample[${i}]}$|${sample[${i}]}[^0-9]"是为了匹配species_1而不匹配到species_11
     cat ./scg/${sample[0]}/*.$a > ./scg/${sample[0]}/${sample[0]}.$a.fa
     rm ./scg/${sample[0]}/*.$a
 }
@@ -64,6 +64,8 @@ done
 echo "start extract step"
 mkdir ./scg
 mkdir ./scgs
+
+count=0
 
 while read line
 do
@@ -102,45 +104,43 @@ do
                 echo "" >&3                   #代表我这一次命令执行到最后，把令牌放回管道
 
         } &
+        pids[${count}]=$!
+        count=`expr ${count} + 1` #给循环计数
 done < ${ortho}
-
-### 删除中间文件
-rm ./scg/${sample[0]}/${sample[0]}.cds.best.fas
-rm ./scg/${sample[0]}/${sample[0]}.pep.best.fas
-rm -rf ./tmpdirprank* #删除prank运行产生的临时目录
-
-wait
-
-sleep 60s
 
 exec 3<&-                       #关闭文件描述符的读
 exec 3>&-                       #关闭文件描述符的写
 echo "extract step end"
 
+# run processes and store pids in array
+# wait for all pids
+for pid in ${pids[*]}
+do
+    echo $pid
+    wait $pid
+done
+
+wait
+
+### 删除中间文件
+#rm ./scg/${sample[0]}/${sample[0]}.cds.best.fas
+#rm ./scg/${sample[0]}/${sample[0]}.pep.best.fas
+#rm -rf ./tmpdirprank* #删除prank运行产生的临时目录
+
 ## 02 合并比对序列
 echo "start merge step"
 
 ### 合并比对的cds和pep序列
-#merge_sequences mafft. cds.
-#merge_sequences mafft. pep.
-#merge_sequences prank. cds.
-#merge_sequences prank. pep.
-
-seqkit concat ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.mafft.cds.fa
-seqkit concat ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.mafft.pep.fa
-seqkit concat ./scg/OG*/OG*.prank.cds.fa > ./scgs/scg.prank.cds.fa
-seqkit concat ./scg/OG*/OG*.prank.pep.fa > ./scgs/scg.prank.pep.fa
+seqkit concat -w 0 ./scg/OG*/OG*.mafft.cds.fa > ./scgs/scg.mafft.cds.fa
+seqkit concat -w 0 ./scg/OG*/OG*.mafft.pep.fa > ./scgs/scg.mafft.pep.fa
+seqkit concat -w 0 ./scg/OG*/OG*.prank.cds.fa > ./scgs/scg.prank.cds.fa
+seqkit concat -w 0 ./scg/OG*/OG*.prank.pep.fa > ./scgs/scg.prank.pep.fa
 
 #### 合并根据pep比对结果转换的CDS比对序列
-#merge_sequences mafft. p2c.
-#merge_sequences prank. p2c.
-#merge_sequences mafft. p2c_trim.
-#merge_sequences prank. p2c_trim.
-
-seqkit concat ./scg/OG*/OG*.mafft.p2c.fa > ./scgs/scg.mafft.p2c.fa
-seqkit concat ./scg/OG*/OG*.prank.p2c.fa > ./scgs/scg.prank.p2c.fa
-seqkit concat ./scg/OG*/OG*.mafft.p2c_trim.fa > ./scgs/scg.mafft.p2c_trim.fa
-seqkit concat ./scg/OG*/OG*.prank.p2c_trim.fa > ./scgs/scg.prank.p2c_trim.fa
+seqkit concat -w 0 ./scg/OG*/OG*.mafft.p2c.fa > ./scgs/scg.mafft.p2c.fa
+seqkit concat -w 0 ./scg/OG*/OG*.prank.p2c.fa > ./scgs/scg.prank.p2c.fa
+seqkit concat -w 0 ./scg/OG*/OG*.mafft.p2c_trim.fa > ./scgs/scg.mafft.p2c_trim.fa
+seqkit concat -w 0 ./scg/OG*/OG*.prank.p2c_trim.fa > ./scgs/scg.prank.p2c_trim.fa
 
 #### notes:用我自己的数据运行，mafft结果正常，prank结果在merge_sequences这步合并之后序列长度不是一致的，没搞清楚什么原因，还是建议使用seqkit concat做合并吧。
 #### 唉，刚为自己学会写函数开心没到半天，就发现自己造轮子bug真是多，还是要多查一下已有的工具。
