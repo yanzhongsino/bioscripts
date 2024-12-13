@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-msa2indels.py
+convert_msa_to_indels.py
 Author: Yan Zhong
 Date: 2024-11-06
 
 这个脚本是开发用来处理多序列比对（multiple sequences alignment, MSA）文件的。默认把多序列比对文件的第一条序列作为参考序列，统计其他序列的indels的数量和每个indel的长度。支持批量处理多个MSA文件。已考虑参考序列和当前序列都是deletion的情况。
 脚本是在chatgpt4的帮助下完成的。
-用法: python msa2indels.py /path/to/msa.fasta --min_indel_length 5 --reference_index 1
+用法: python convert_msa_to_indels.py /path/to/msa.fasta --min_indel_length 5 --reference_index 1
 参数：
 - <msa.fasta>：必需参数，多序列比对文件，支持多个MSA文件。
 - --min_indel_length 0：可选参数，设置被统计的indel的最短长度，默认是0。
@@ -19,7 +19,7 @@ Date: 2024-11-06
 This script counts insertions and deletions (indels) in multiple sequence alignment (MSA) files
 compared to a reference sequence and outputs the statistics to a TSV file.
 
-usage: msa2indels_with2.py [-h] [--min_indel_length MIN_INDEL_LENGTH]
+usage: convert_msa_to_indels.py [-h] [--min_indel_length MIN_INDEL_LENGTH]
                            [--reference_index REFERENCE_INDEX]
                            [--output OUTPUT]
                            file_paths [file_paths ...]
